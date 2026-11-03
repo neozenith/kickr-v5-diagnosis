@@ -1,0 +1,7 @@
+tmp/
+node_modules/
+.*cache/
+.playwright*/
+.agents/
+.codex/
+.claude/
