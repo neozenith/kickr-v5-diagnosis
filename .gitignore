@@ -5,3 +5,8 @@ node_modules/
 .agents/
 .codex/
 .claude/
+*.pyc
+__pycache__/
+.venv/
+# Copied Wahoo support article text: third-party copyright, keep local only
+article.txt
