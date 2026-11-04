@@ -4,9 +4,13 @@ node_modules/
 .playwright*/
 .agents/
 .codex/
-.claude/
+.claude/*
+!.claude/skills/
 *.pyc
 __pycache__/
 .venv/
 # Copied Wahoo support article text: third-party copyright, keep local only
 article.txt
+# Frontend build output and Playwright artefacts
+frontend/dist/
+test-results/

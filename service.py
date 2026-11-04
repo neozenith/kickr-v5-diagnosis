@@ -21,6 +21,7 @@ from aiohttp import web
 from bleak import BleakClient, BleakScanner
 
 from ant import AntBridge
+from sim import SCENARIOS, SimDriver
 from kickr import (
     CHR_CPS_MEAS,
     CHR_FTMS_BIKE,
@@ -31,7 +32,7 @@ from kickr import (
 )
 
 LOG_DIR = Path("tmp") / "logs"
-STATIC = Path(__file__).parent / "web"
+STATIC = Path(__file__).parent / "frontend" / "dist"  # built by `make web`
 WHEEL_CIRC_M = 2.105  # 700x25c default, as Zwift uses
 STALL_S = 3.0
 
@@ -432,8 +433,10 @@ def make_app(mon: Monitor, hub: Hub) -> web.Application:
 
     app = web.Application()
     app.add_routes([web.post("/api/ant/calibrate/{kind}", calibrate),
-                    web.get("/", index), web.get("/api/status", status),
-                    web.get("/api/config", config), web.get("/events", events)])
+                    web.get("/api/status", status),
+                    web.get("/api/config", config), web.get("/events", events),
+                    web.static("/assets", STATIC / "assets"),
+                    web.get("/", index), web.get("/route", index)])
     return app
 
 
@@ -478,6 +481,10 @@ async def main_async(args):
     await runner.setup()
     await web.TCPSite(runner, args.host, args.port).start()
     mon.event(f"web UI http://{args.host}:{args.port}  stream log {mon.stream_path}")
+    if args.sim:
+        mon.event(f"SIMULATION MODE: scenario={args.sim}, no Bluetooth or ANT+ hardware used")
+        await asyncio.gather(SimDriver(mon, args.sim).run(), mon.heartbeat())
+        return
     loop = asyncio.get_running_loop()
     mon.ant = AntBridge(
         args.ant_id,
@@ -496,6 +503,8 @@ def main():
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--ant-id", type=int, default=39688, help="ANT+ device number")
     p.add_argument("--crank-pm", default="4iiii105", help="BLE name of crank power meter")
+    p.add_argument("--sim", choices=SCENARIOS,
+                   help="replace all hardware with the simulated driver (sim.py)")
     args = p.parse_args()
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(
